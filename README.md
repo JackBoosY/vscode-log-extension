@@ -12,4 +12,3 @@ This plugin will:
 ## Requirements
 
 - VSCode >= 1.76.0
-- CMake Tools extension >= 1.13.0
