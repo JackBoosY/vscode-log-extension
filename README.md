@@ -1,4 +1,4 @@
-# VSCode log exntesion
+# VSCode log extension
 
 Atomatic log analysis by rule file.
 
