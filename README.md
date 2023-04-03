@@ -2,6 +2,8 @@
 
 Atomatic log analysis by rule file.
 
+This extension is more like a third-party extension, you can modify the source code to realize the code jump function (click to the error line and press `CTRL/Command + X`).
+
 This plugin will:
 
 - Match log content using fixed rules
