@@ -85,18 +85,26 @@ export class ErrorManager{
             }
 
             // open & jump to related line
-            let pos = new vscode.Position(selectLine? selectLine : 0, 0);
+            let pos = new vscode.Position(selectLine? selectLine - 1 : 0, 0);
             const openPath = vscode.Uri.file(fileInfo.file);
 
             vscode.workspace.openTextDocument(openPath).then(doc => {
                 let editor = vscode.window.activeTextEditor;
-                vscode.window.showTextDocument(doc);
-                if (editor !== undefined)
-                {
-                    editor.selections = [new vscode.Selection(pos,pos)];
-                    let range = new vscode.Range(pos, pos);
-                    editor.revealRange(range);
-                }
+                vscode.window.showTextDocument(doc, {selection: new vscode.Range(pos, pos)});
+            });
+        }
+    }
+
+    async jumpToError(file: string, line: number)
+    {
+        if (file !== undefined && file.length && line !== -1)
+        {
+            let pos = new vscode.Position(line, 0);
+            const openPath = vscode.Uri.file(file);
+
+            await vscode.workspace.openTextDocument(openPath).then(doc => {
+                let editor = vscode.window.activeTextEditor;
+                vscode.window.showTextDocument(doc, {selection: new vscode.Range(pos, pos)});
             });
         }
     }

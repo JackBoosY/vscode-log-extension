@@ -15,7 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
 	repoManager = new RepoManager;
 	errorManager = new ErrorManager(repoManager);
 	semanticTokenManager = new SemanticTokenManager();
-	logPanel = new LogPanelManager(context, errorManager);
+	logPanel = new LogPanelManager(context, errorManager, context.extensionUri);
 	logDoc = new LogTextDocuments(context, errorManager, semanticTokenManager, logPanel);	
 
 	vscode.commands.registerCommand('editor.action.clipboardCutAction', async (arg) => {

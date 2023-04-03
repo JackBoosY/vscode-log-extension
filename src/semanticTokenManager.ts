@@ -44,14 +44,14 @@ export class SemanticTokenManager {
     private getConfiguration()
     {
         let config;
-		try {
-			config = fs.readFileSync(this._userConfigPath, {'encoding': 'utf-8'});
-		}
-		catch (err) {
+        try {
+            config = fs.readFileSync(this._userConfigPath, {'encoding': 'utf-8'});
+        }
+        catch (err) {
             vscode.window.showWarningMessage('Content style config file is empty, color will not enabled.');
             return;
-		}
-    
+        }
+
         if (!config.length)
         {
             vscode.window.showWarningMessage('Content style config file is empty, color will not enabled.');
