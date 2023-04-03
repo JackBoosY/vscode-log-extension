@@ -54,6 +54,10 @@ Match log content by regex
 }
 ```
 
+## Example:
+
+ [Example](./example)
+
 ## Requirements
 
 - VSCode >= 1.76.0
