@@ -3,13 +3,22 @@
   "displayName": "VSCode Log Analysis extension",
   "description": "help to analysis and debug log quickly and easily",
   "publisher": "JackBoosY",
-  "version": "0.0.1",
+  "icon": "icon/logo.png",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.76.0"
   },
   "categories": [
     "Other"
   ],
+  "bugs": {
+    "url": "https://github.com/JackBoosY/vscode-log-extension/issues"
+  },
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/JackBoosY/vscode-log-extension.git"
+  },
+  "homepage": "https://github.com/JackBoosY/vscode-log-extension",
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
