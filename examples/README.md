@@ -2,7 +2,7 @@
 
 This is an example configuration to analysis log file.
 
-![A screenshot of the sample extension.](/example.png)
+![A screenshot of the sample extension.](./example.png)
 
 ## Use the following configuration file:
 

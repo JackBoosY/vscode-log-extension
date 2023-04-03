@@ -56,7 +56,7 @@ Match log content by regex
 
 ## Example:
 
- [Example](./example)
+ [Example](./examples)
 
 ## Requirements
 
