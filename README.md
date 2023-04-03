@@ -2,13 +2,14 @@
 
 Atomatic log analysis by rule file.
 
-This extension is more like a third-party extension, you can modify the source code to realize the code jump function (click to the error line and press `CTRL/Command + X`).
+This extension is more like a third-party extension, you can modify the source code to implement the code jump function (click to the error line and press `CTRL/Command + X`).
 
 This plugin will:
 
 - Match log content using fixed rules
 - Modify the font and color of the matched content
-- Collect error content and display it on VSCode panel
+- Collect error content and display it on the VSCode panel
+- Click the error message on the panel to jump to the relevant line in the log file
 - Redirect the error content corresponding to the source file version and jump to the corresponding line number of the source file
 
 ## Rule file:
