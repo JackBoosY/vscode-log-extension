@@ -64,11 +64,9 @@ export class LogPanelManager implements vscode.WebviewViewProvider
           subContent += error.line.toString();
           subContent += `" log="`;
           subContent += document[0];
-          subContent += `" start="`;
-          subContent += error.start;
           subContent +=`">`;
           subContent += this.htmlEncodeByRegExp(error.content);
-          subContent += `</div></b></p>`;
+          subContent += `</div></font></b></p>`;
 
           content += subContent;
         }
@@ -100,7 +98,7 @@ export class LogPanelManager implements vscode.WebviewViewProvider
       <script type="text/javascript">
       const vscode = acquireVsCodeApi();
       function referTo(obj) {
-        vscode.postMessage({ file: obj.getAttribute("log"), line: obj.getAttribute("line"), start: obj.getAttribute("start")});
+        vscode.postMessage({ file: obj.getAttribute("log"), line: obj.getAttribute("line")});
       }
       </script>
     </html>

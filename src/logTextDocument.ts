@@ -265,6 +265,24 @@ export class LogTextDocuments implements vscode.DocumentSemanticTokensProvider {
 										code: {file: matchedFileLine, line: lineNum}
 									});
 								}
+								else
+								{
+									// source file text not found, it's a general error printed by somewhere
+									this._errorLogs.push({
+										line: i,
+										start: start,
+										content: line.substring(start, line.length)
+									});
+								}
+							}
+							else
+							{
+								// source file text not found, it's a general error printed by somewhere
+								this._errorLogs.push({
+									line: i,
+									start: start,
+									content: line.substring(start, line.length)
+								});
 							}
 						}
 						else
@@ -276,6 +294,15 @@ export class LogTextDocuments implements vscode.DocumentSemanticTokensProvider {
 								content: line.substring(start, line.length)
 							});
 						}
+					}
+					else
+					{
+						// source file text not found, it's a general error printed by somewhere
+						this._errorLogs.push({
+							line: i,
+							start: start,
+							content: line.substring(start, line.length)
+						});
 					}
 				}
 			}
