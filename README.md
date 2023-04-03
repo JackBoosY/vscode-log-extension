@@ -20,10 +20,10 @@ Describe the matched content font and color
 ```json
 {
   "type_1": {
-    "foreground": "#ff0000", # Required: content color
-    "italic": true, # Optional: italic
-    "bold": true, # Optional: bold
-    "underline": true # Optional: underline
+    "foreground": "#ff0000", // Required: content color
+    "italic": true, // Optional: italic
+    "bold": true, // Optional: bold
+    "underline": true // Optional: underline
   }
   ...
 }
