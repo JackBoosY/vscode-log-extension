@@ -46,6 +46,11 @@ Match log content by regex
     }
     ...
   },
+  "hidden": [
+    "hidden_error_1",
+    "hidden_error_2",
+    ...
+  ],
   "panel": [
     "content_type_which_you_describe" // save the matched regex content to VSCode panel
     ...

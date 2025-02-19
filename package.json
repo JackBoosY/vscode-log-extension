@@ -4,7 +4,7 @@
   "description": "help to analysis and debug log quickly and easily",
   "publisher": "JackBoosY",
   "icon": "icon/logo.png",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
     "vscode": "^1.76.0"
   },

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import {RepoManager} from './repoManager';
-
+import {WriteLogMgr} from './log';
 
 export interface IErrorFileInfo {
     file: string,
@@ -23,10 +23,12 @@ export class ErrorManager{
     private _errorLogs: Map<string, IErrorContent>;
 
     private _repoMgr: RepoManager;
+    private _logMgr : WriteLogMgr;
 
-    constructor(repoManager: RepoManager)
+    constructor(repoManager: RepoManager, logMgr : WriteLogMgr)
     {
         this._repoMgr = repoManager;
+        this._logMgr = logMgr;
         this._errorLogs = new Map<string, IErrorContent>();
     }
 
@@ -34,12 +36,19 @@ export class ErrorManager{
     {
         if (!this._errorLogs.has(log))
         {
+            this._logMgr.logInfo('adding errors, file: ' + log);
             this._errorLogs.set(log, {version: version, errors: errors});
+        }
+        else
+        {
+            this._logMgr.logInfo('log already added, file: ' + log);
         }
     }
 
     async openSelectDoc(log: string, line: number)
     {
+        vscode.window.showInformationMessage('Opening related code file...');
+        this._logMgr.logInfo('openSelectDoc related code file ' + log);
         let selectFile;
         let selectLine;
         let version;
@@ -56,6 +65,7 @@ export class ErrorManager{
                     selectFile = currError.code?.file;
                     selectLine = currError.code?.line;
 
+                    this._logMgr.logInfo('found version info! version: ' + version + ' file: ' + selectFile + ' line: ' + selectLine);
                     find = true;
                     break;
                 }
@@ -68,12 +78,14 @@ export class ErrorManager{
             let fileName = selectFile.match(/[^\/]+$/);
             if (fileName === null)
             {
+                this._logMgr.logErr('Source file: ' + selectFile + ' not found.');
                 vscode.window.showErrorMessage('Source file: ' + selectFile + ' not found.');
                 return;
             }
             let fileInfo = await this._repoMgr.getLogRoot(fileName[0]);
             if (!fileInfo.file.length)
             {
+                this._logMgr.logErr('Source file: ' + selectFile + ' not found.');
                 vscode.window.showErrorMessage('Source file: ' + selectFile + ' not found.');
                 return;
             }
@@ -81,31 +93,44 @@ export class ErrorManager{
             // reset code to related version
             if (!this._repoMgr.resetToSelectVersion(version? version: "", fileInfo.repo))
             {
+                this._logMgr.logErr('Related commit not found, use the current code instead.');
                 vscode.window.showWarningMessage('Related commit not found, use the current code instead.');
             }
 
+            this._logMgr.logInfo('try to open source file...');
             // open & jump to related line
             let pos = new vscode.Position(selectLine? selectLine - 1 : 0, 0);
             const openPath = vscode.Uri.file(fileInfo.file);
 
             vscode.workspace.openTextDocument(openPath).then(doc => {
                 let editor = vscode.window.activeTextEditor;
+                this._logMgr.logInfo('openning source file...');
                 vscode.window.showTextDocument(doc, {selection: new vscode.Range(pos, pos)});
             });
         }
+        else
+        {
+            this._logMgr.logErr('Related code file was not found.');
+            vscode.window.showErrorMessage('Related code file was not found.');
+        }
     }
 
-    async jumpToError(file: string, line: number)
+    async jumpToError(file: string, line: number, start: number)
     {
         if (file !== undefined && file.length && line !== -1)
         {
-            let pos = new vscode.Position(line, 0);
+            this._logMgr.logInfo('jump to related error line ' + file);
+            let pos = new vscode.Position(line, start !== -1 ? start : 0);
             const openPath = vscode.Uri.file(file);
 
             await vscode.workspace.openTextDocument(openPath).then(doc => {
                 let editor = vscode.window.activeTextEditor;
                 vscode.window.showTextDocument(doc, {selection: new vscode.Range(pos, pos)});
             });
+        }
+        else
+        {
+            this._logMgr.logErr('jumpToError fail! ' + file + ' not found!');
         }
     }
 }

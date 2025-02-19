@@ -16,6 +16,10 @@ theme.json:
           "tilEnd": true
       }
     },
+    "hidden": [
+      "hidden_error_1",
+      "hidden_error_2"
+    ],
     "panel": [
       "error_info_1"
     ],

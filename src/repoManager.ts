@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
+import { workspace, ProcessExecution } from "vscode";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as proc from 'child_process';
+import {WriteLogMgr} from './log';
 
 export interface IFoundFileInfo {
     file: string,
@@ -10,9 +12,12 @@ export interface IFoundFileInfo {
 
 export class RepoManager{
     private _repoPath: Map<string, string>;
+
+    private _logMgr : WriteLogMgr;
     
-    constructor()
+    constructor(logMgr : WriteLogMgr)
     {
+        this._logMgr = logMgr;
         // Read repo path here
         this._repoPath = new Map<string, string>;
     }
@@ -47,23 +52,27 @@ export class RepoManager{
 
     async resetToSelectVersion(version: string, repo: string) : Promise<boolean>
     {
+        this._logMgr.logInfo('Trying to reset code: ' + repo + ' to version: ' + version);
         // pull code to the latest to get new tags and new branches
         const result = this.runCommand('git', 'pull ', repo);
         if ((await result).indexOf('up to date') === -1)
         {
+            this._logMgr.logErr('cannot update repo to latest!');
             return false;
         }
 
         const commitId = this.getCommitId(repo, version);
-        let process =  new vscode.ProcessExecution('git', ['tag'], {cwd: repo});
+        new vscode.ProcessExecution('git', ['tag'], {cwd: repo});
 
         if ((await commitId).length)
         {
             const result = this.runCommand('git', 'checkout ' + (await commitId).toString(), repo);
             if ((await result).indexOf('HEAD is now at ') === -1)
             {
+                this._logMgr.logErr('tag is not found!');
                 return false;
             }
+            this._logMgr.logInfo('tag found!');
             return true;
         }
         else
@@ -74,6 +83,7 @@ export class RepoManager{
 
     async getLogRoot(file: string): Promise<IFoundFileInfo>
     {
+        this._logMgr.logInfo('Trying to get error related repo.');
         let fileInfo: IFoundFileInfo = {file: '', repo: ''};
         for (let repo of this._repoPath)
         {
@@ -90,6 +100,7 @@ export class RepoManager{
 
                 if (fileInfo.file.length)
                 {
+                    this._logMgr.logErr('Error related repo found.');
                     break;
                 }
             }
@@ -101,29 +112,34 @@ export class RepoManager{
     private async runCommand(command: string, param: string, executeRoot: string): Promise<string>
     {
         try {
+            this._logMgr.logInfo('Running command: ' + command + ' ' + param + ' on ' + executeRoot);
             return await proc.execSync(command + ' ' + param, {cwd: executeRoot, encoding: 'utf-8'});
         }
         catch (error) {
+            this._logMgr.logInfo('Run command: ' + command + ' ' + param + ' on ' + executeRoot + ' failed!');
             return "";
         }
     }
 
     private async getCommitId(repoPath: string, version: string): Promise<string>
     {
+        this._logMgr.logInfo('Getting version-product tag with repo: ' + repoPath);
         // try to find version-product
         let maybeTag = await this.runCommand('git', 'tag -l ' + version, repoPath);
 
-
         if (!maybeTag.length)
         {
+            this._logMgr.logInfo('Tag not found, trying to version only tag');
             // try to find version
             maybeTag = await this.runCommand('git', 'tag -l ' + version, repoPath);
             if (!maybeTag.length)
             {
+                this._logMgr.logErr('All tag not found.');
                 return "";
             }
         }
 
+        this._logMgr.logInfo('Tag found: ' + maybeTag);
         maybeTag = maybeTag.replace('\n', '');
         return maybeTag;
     }

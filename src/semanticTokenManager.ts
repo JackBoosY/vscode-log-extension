@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
 import { workspace } from 'vscode';
 import * as fs from 'fs';
+import {WriteLogMgr} from './log';
 
 export class SemanticTokenManager {
+    private _extension;
     private _jsonRoot = 'editor';
     private _jsonSubRoot = 'semanticTokenColorCustomizations';
 
@@ -13,8 +15,12 @@ export class SemanticTokenManager {
     private tokenTypes = new Map<string, number>();
     private tokenModifiers = new Map<string, number>();
 
-    constructor()
+    private _logMgr;
+
+    constructor(extension: vscode.ExtensionContext, logMgr : WriteLogMgr)
     {
+        this._extension = extension;
+        this._logMgr = logMgr;
         this._userConfigPath = workspace.getConfiguration('loganalysis').get<string>('theme.path')!;
 
         if (this._userConfigPath === undefined)
@@ -48,12 +54,14 @@ export class SemanticTokenManager {
             config = fs.readFileSync(this._userConfigPath, {'encoding': 'utf-8'});
         }
         catch (err) {
+            this._logMgr.logInfo('Content style config file is empty, color will not enabled.');
             vscode.window.showWarningMessage('Content style config file is empty, color will not enabled.');
             return;
         }
 
         if (!config.length)
         {
+            this._logMgr.logInfo('Content style config file is empty, color will not enabled.');
             vscode.window.showWarningMessage('Content style config file is empty, color will not enabled.');
             return;
         }
@@ -76,6 +84,7 @@ export class SemanticTokenManager {
 
         let final = {rules: json as Array<object>};
 
+        this._logMgr.logInfo('Content style config updated.');
         workspace.getConfiguration(this._jsonRoot).update(this._jsonSubRoot, final);
     }
 

@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import {ErrorManager, IErrorInfo} from './errorManager';
 import {SemanticTokenManager} from './semanticTokenManager';
 import {LogPanelManager} from './logPanelManager';
+import {WriteLogMgr} from './log';
 
 interface IParsedToken {
 	line: number;
@@ -27,6 +28,7 @@ interface RegexUnit {
 
 export class LogTextDocuments implements vscode.DocumentSemanticTokensProvider {
     private _userConfigPath: string;
+	private _extension;
 
 	private regexHighlightMap = new Map<string, RegexUnit>;
 	private regexPanelMap = new Array<string>;
@@ -35,23 +37,30 @@ export class LogTextDocuments implements vscode.DocumentSemanticTokensProvider {
 	private _hightLight = 'highlight';
 	private _panel = 'panel';
 	private _jump = 'jump';
+	private _hidden = 'hidden';
 
-	private version : string;
+	private _version : string;
+
+	private _excudeContentRegex = [] as RegExp[];
 
     private _showTip: string[] = [];
 
     private _errorLogs: IErrorInfo[] = [];
+    private _hiddenLogs: Map<string, number>;
     private _errMgr;
 	private _sematicMgr;
 	private _panelMgr;
+	private _logMgr;
 
-    constructor(private readonly context: vscode.ExtensionContext, errMgr: ErrorManager, sematicMgr: SemanticTokenManager, panelMgr: LogPanelManager)
+    constructor(private readonly extension: vscode.ExtensionContext, errMgr: ErrorManager, sematicMgr: SemanticTokenManager, panelMgr: LogPanelManager, logMgr: WriteLogMgr)
     {
+		this._extension = extension;
         this._errMgr = errMgr;
 		this._sematicMgr = sematicMgr;
 		this._panelMgr = panelMgr;
-
-		this.version = "0.0.0"; // change default verion here.
+		this._logMgr = logMgr;
+		this._version = "0.0.0"; // change default verion here.
+		this._hiddenLogs = new Map<string, number>;
 
         this._userConfigPath = workspace.getConfiguration('loganalysis').get<string>('regex.path')!;
 		if (this._userConfigPath === undefined || !this._userConfigPath.length)
@@ -89,14 +98,16 @@ export class LogTextDocuments implements vscode.DocumentSemanticTokensProvider {
 			builder.push(token.line, token.startCharacter, token.length, token.tokenType, token.tokenModifiers);
 		});
         
+		this._logMgr.logInfo('translating ' + document.fileName);
 		// one single log may parse twice, don't know why.
 		if (this._showTip.indexOf(document.fileName) === -1)
 		{
+			this._logMgr.logInfo('save result for ' + document.fileName);
 			this._showTip.push(document.fileName);
 
-			this._errMgr.pushLogs(document.fileName, this._errorLogs, this.version);
+			this._errMgr.pushLogs(document.fileName, this._errorLogs, this._version);
 
-			this._panelMgr.showData(document.fileName, this._errorLogs);
+			this._panelMgr.showData(document.fileName, this._errorLogs, this._hiddenLogs);
 		}
 
 		return builder.build();
@@ -201,6 +212,15 @@ export class LogTextDocuments implements vscode.DocumentSemanticTokensProvider {
 				}
 			}
 		}
+
+		// match hidden error items
+		if (json[this._hidden] !== undefined)
+		{
+			for (let current in json[this._hidden])
+			{
+				this._excudeContentRegex.push(new RegExp(json[this._hidden][current]));
+			}
+		}
 	}
 
 	private _parseText(text: string): ParsedResult
@@ -218,6 +238,30 @@ export class LogTextDocuments implements vscode.DocumentSemanticTokensProvider {
 				matched = this.regexContent(line, willMatch[1].regex, (willMatch[1].char !== undefined ? willMatch[1].char: ''), willMatch[1].offset);
 				if (matched.length)
 				{
+					// exclude hidden content
+					if (this._excudeContentRegex.length) {
+						let hit = false;
+						for (let exc of this._excudeContentRegex) {
+							if (line.match(exc)) {
+								// Save hidden record
+								let excStr = exc.source;
+								if (this._hiddenLogs.has(excStr)) {
+									this._hiddenLogs.set(excStr, this._hiddenLogs.get(excStr)! + 1);
+								}
+								else {
+									this._hiddenLogs.set(excStr, 1);
+								}
+								hit = true;
+
+								break;
+							} 
+						}
+
+						if (hit) {
+							continue;
+						}
+					}
+
 					let start = line.indexOf(matched);
 					let showLength;
 					if (willMatch[1].tilEnd)
@@ -230,7 +274,7 @@ export class LogTextDocuments implements vscode.DocumentSemanticTokensProvider {
 					}
 
 					// You may need to save version here
-					this.version;
+					this._version;
 					
 					r.push({
 						line: i,
@@ -309,5 +353,22 @@ export class LogTextDocuments implements vscode.DocumentSemanticTokensProvider {
 		}
 
 		return {token: r};
+	}
+
+	public removeDocument(document: string)
+	{
+		if (this._showTip.indexOf(document) !== -1)
+		{
+			this._logMgr.logInfo('remove result of ' + document);
+			let newTips = [];
+			for (let i in this._showTip)
+			{
+				if (this._showTip[i] !== document)
+				{
+					newTips.push(i);
+				}
+			}
+			this._showTip = newTips;
+		}
 	}
 }

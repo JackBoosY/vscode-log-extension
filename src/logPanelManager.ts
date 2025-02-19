@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
-import { WebviewView } from "vscode";
+import { CancellationToken, WebviewView, WebviewViewResolveContext } from "vscode";
 import {ErrorManager, IErrorInfo} from './errorManager';
 import {LogTextDocuments} from './logTextDocument';
+import {WriteLogMgr} from './log';
 
 interface AnalysisResult {
   info: IErrorInfo[]
@@ -10,21 +11,25 @@ interface AnalysisResult {
 export class LogPanelManager implements vscode.WebviewViewProvider
 {
   private _context;
-  _webview?: vscode.WebviewView;
-  _doc?: LogTextDocuments;
-  _uri: vscode.Uri;
-  _errMgr: ErrorManager;
+  private _webview?: vscode.WebviewView;
+  private _doc?: LogTextDocuments;
+  private _uri: vscode.Uri;
+  private _errMgr: ErrorManager;
+  private _logMgr : WriteLogMgr;
 
-  errors = new Map<string, AnalysisResult>;
+  private errors = new Map<string, AnalysisResult>;
+  private hiddens = new Map<string, number>;
 
-  constructor(private readonly context: vscode.ExtensionContext, errMgr: ErrorManager, extensionUri: vscode.Uri) {
+  constructor(private readonly context: vscode.ExtensionContext, errMgr: ErrorManager, extensionUri: vscode.Uri, logMgr: WriteLogMgr) {
     this._context = context;
     this._uri = extensionUri;
     this._errMgr = errMgr;
+    this._logMgr = logMgr;
   }
 
   public registerTextDocument(doc: LogTextDocuments)
   {
+    this._logMgr.logInfo('registerTextDocument.');
     this._doc = doc;
   }
 
@@ -70,6 +75,21 @@ export class LogPanelManager implements vscode.WebviewViewProvider
 
           content += subContent;
         }
+
+        content += `</font></b></p><p><b><font color="blue" size="4">`;
+        content += " Hidden error:";
+        content += `</font></b></p>`;
+        for (let hidden of this.hiddens) {
+          let subContent = "";
+          subContent += `<p><b><font color=\"red\" size=\"2\">`;
+          subContent += hidden[0];
+          subContent += `</b><br>`;
+          subContent += `<b><font color=\"red\" size=\"2\">Count: `;
+          subContent += hidden[1];
+          subContent += `</b></p>`;
+          content += subContent;
+        }
+        content += `<br>`;
       }
     }
     return content;
@@ -77,6 +97,7 @@ export class LogPanelManager implements vscode.WebviewViewProvider
 
   public resolveWebviewView(webviewView: WebviewView)
   {
+    this._logMgr.logInfo('resolveWebviewView.');
     this._webview = webviewView;
      webviewView.webview.options = {
          enableScripts: true,
@@ -107,11 +128,25 @@ export class LogPanelManager implements vscode.WebviewViewProvider
     this.setWebViewMessageListener(this._webview);
   }
 
-  public showData(document: string, errorArray: IErrorInfo[])
+  public closeDocument(document: string)
   {
+    if (this.errors.has(document))
+    {
+      this._logMgr.logInfo('close document: ' + document + ' and update panel');
+      this.errors.delete(document);
+
+      this.resolveWebviewView(this._webview!);
+    }
+  }
+
+  public showData(document: string, errorArray: IErrorInfo[], hiddenArray: Map<string, number>)
+  {
+    this._logMgr.logInfo('update panel by adding error of: ' + document);
     if (!this.errors.has(document))
     {
+      this._logMgr.logInfo('data is new, add now.');
       this.errors.set(document, { info: errorArray });
+      this.hiddens = hiddenArray;
     }
     this.resolveWebviewView(this._webview!);
   }
@@ -119,7 +154,8 @@ export class LogPanelManager implements vscode.WebviewViewProvider
   private setWebViewMessageListener(webviewview: WebviewView)
   {
     webviewview.webview.onDidReceiveMessage((message) => {
-      this._errMgr.jumpToError(message.file, parseInt(message.line));
+      this._logMgr.logInfo('Jump to related log ' + message.file + ' line: ' + message.line + ' start pos: ' + message.start);
+      this._errMgr.jumpToError(message.file, parseInt(message.line), parseInt(message.start));
     });
   }
 }
